@@ -64,7 +64,7 @@ namespace TGC.Group.Model
             terrain = new TgcPlane(new Vector3(0, 0, 0), new Vector3(6000, 0f, 6000), TgcPlane.Orientations.XZplane, terrainTexture);
 
             //Modelo 1, template
-            var model1_Loader = new TgcSceneLoader();
+            var model1_Loader = new TgcSceneLoader(); 
             var model1_Scene = model1_Loader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\Pino\\Pino-TgcScene.xml");
             var model1_Template = model1_Scene.Meshes[0];
 

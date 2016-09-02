@@ -37,7 +37,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Grupo 99")]
+        [global::System.Configuration.DefaultSettingValueAttribute("RODYAN")]
         public string Name {
             get {
                 return ((string)(this["Name"]));
@@ -49,7 +49,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("SurvivalCraft")]
+        [global::System.Configuration.DefaultSettingValueAttribute("SurvivalCraft - Descripción.")]
         public string Description {
             get {
                 return ((string)(this["Description"]));
