@@ -49,7 +49,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Mi idea - Descripción de la idea")]
+        [global::System.Configuration.DefaultSettingValueAttribute("SurvivalCraft")]
         public string Description {
             get {
                 return ((string)(this["Description"]));
@@ -85,13 +85,37 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("cajaMadera4.jpg")]
-        public string TexturaCaja {
+        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        public int Config_TreesVolume {
             get {
-                return ((string)(this["TexturaCaja"]));
+                return ((int)(this["Config_TreesVolume"]));
             }
             set {
-                this["TexturaCaja"] = value;
+                this["Config_TreesVolume"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
+        public int Config_RocksVolume {
+            get {
+                return ((int)(this["Config_RocksVolume"]));
+            }
+            set {
+                this["Config_RocksVolume"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("250")]
+        public int Config_GrassVolume {
+            get {
+                return ((int)(this["Config_GrassVolume"]));
+            }
+            set {
+                this["Config_GrassVolume"] = value;
             }
         }
     }
