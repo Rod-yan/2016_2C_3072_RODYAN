@@ -86,36 +86,60 @@ namespace TGC.Group {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("150")]
-        public int Config_TreesVolume {
+        public int Config_01_TreesVolume {
             get {
-                return ((int)(this["Config_TreesVolume"]));
+                return ((int)(this["Config_01_TreesVolume"]));
             }
             set {
-                this["Config_TreesVolume"] = value;
+                this["Config_01_TreesVolume"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("20")]
-        public int Config_RocksVolume {
+        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        public int Config_02_RocksVolume {
             get {
-                return ((int)(this["Config_RocksVolume"]));
+                return ((int)(this["Config_02_RocksVolume"]));
             }
             set {
-                this["Config_RocksVolume"] = value;
+                this["Config_02_RocksVolume"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("250")]
-        public int Config_GrassVolume {
+        [global::System.Configuration.DefaultSettingValueAttribute("2000")]
+        public int Config_03_GrassVolume {
             get {
-                return ((int)(this["Config_GrassVolume"]));
+                return ((int)(this["Config_03_GrassVolume"]));
             }
             set {
-                this["Config_GrassVolume"] = value;
+                this["Config_03_GrassVolume"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int Config_04_BushesVolume {
+            get {
+                return ((int)(this["Config_04_BushesVolume"]));
+            }
+            set {
+                this["Config_04_BushesVolume"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public int Config_MapSizeMultiplier {
+            get {
+                return ((int)(this["Config_MapSizeMultiplier"]));
+            }
+            set {
+                this["Config_MapSizeMultiplier"] = value;
             }
         }
     }
