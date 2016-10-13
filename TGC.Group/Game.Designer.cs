@@ -85,7 +85,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
         public int Config_01_TreesVolume {
             get {
                 return ((int)(this["Config_01_TreesVolume"]));
@@ -97,7 +97,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
         public int Config_02_RocksVolume {
             get {
                 return ((int)(this["Config_02_RocksVolume"]));
@@ -109,7 +109,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2000")]
+        [global::System.Configuration.DefaultSettingValueAttribute("60")]
         public int Config_03_GrassVolume {
             get {
                 return ((int)(this["Config_03_GrassVolume"]));
@@ -121,7 +121,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
         public int Config_04_BushesVolume {
             get {
                 return ((int)(this["Config_04_BushesVolume"]));

@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using TGC.Core.SkeletalAnimation;
 
-namespace TGC.Group.Actor
+namespace TGC.Group.Actors
 {
-    class Actor : TgcSkeletalLoader
+    public class Actor : TgcSkeletalMesh
     {
         private Inventory Inventory;
         private float Health { get; set; }

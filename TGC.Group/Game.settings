@@ -18,16 +18,16 @@
       <Value Profile="(Default)">..\..\Media\</Value>
     </Setting>
     <Setting Name="Config_01_TreesVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">150</Value>
+      <Value Profile="(Default)">50</Value>
     </Setting>
     <Setting Name="Config_02_RocksVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">150</Value>
+      <Value Profile="(Default)">50</Value>
     </Setting>
     <Setting Name="Config_03_GrassVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2000</Value>
+      <Value Profile="(Default)">60</Value>
     </Setting>
     <Setting Name="Config_04_BushesVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">30</Value>
+      <Value Profile="(Default)">20</Value>
     </Setting>
     <Setting Name="Config_MapSizeMultiplier" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TGC.Group.Items;
 
-namespace TGC.Group.Actor
+namespace TGC.Group.Actors
 {
     class Inventory
     {
