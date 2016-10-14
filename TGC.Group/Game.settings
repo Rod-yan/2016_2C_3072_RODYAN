@@ -21,13 +21,13 @@
       <Value Profile="(Default)">50</Value>
     </Setting>
     <Setting Name="Config_02_RocksVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">50</Value>
+      <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="Config_03_GrassVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">60</Value>
+      <Value Profile="(Default)">175</Value>
     </Setting>
     <Setting Name="Config_04_BushesVolume" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">20</Value>
+      <Value Profile="(Default)">175</Value>
     </Setting>
     <Setting Name="Config_MapSizeMultiplier" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>
