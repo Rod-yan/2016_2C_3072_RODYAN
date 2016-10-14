@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using TGC.Group.Camara;
 using TGC.Group.Actors;
 using TGC.Group.Collision;
+using TGC.Core.Input;
 using TGC.Core.Direct3D;
 using TGC.Core.Utils;
 using TGC.Core.BoundingVolumes;
 using TGC.Core.Example;
 using TGC.Core.Geometry;
+using TGC.Core.Collision;
 using TGC.Core.SceneLoader;
 using TGC.Core.Textures;
 using TGC.Core.Terrain;
@@ -28,13 +30,18 @@ namespace TGC.Group.Model
     {
         private readonly List<TgcBoundingAxisAlignBox> objetosColisionables = new List<TgcBoundingAxisAlignBox>();
         private bool BoundingBox;
+        private bool selected;
         private TgcPlane terrain;
         private List<TgcMesh> models;
         private TgcSkyBox skybox;
         private TgcSkeletalMesh character;
         private SphereCollisionManager collisionManager;
         private TgcBoundingSphere characterSphere;
-        private TgcThirdPersonCamera camaraInterna;
+        private TgcFpsCamera camaraInterna;
+        private Vector3 viewVector;
+        private TgcPickingRay pickingRay;
+        private TgcMesh selectedMesh;
+        private Vector3 collisionPoint;
 
         /// <summary>
         ///     Constructor del juego.
@@ -61,6 +68,7 @@ namespace TGC.Group.Model
             var numberGenerator = new Random();
             var sceneLoader = new TgcSceneLoader();
             var skeletalLoader = new TgcSkeletalLoader();
+            
 
             models = new List<TgcMesh>();
 
@@ -88,7 +96,7 @@ namespace TGC.Group.Model
             //Escalarlo porque es muy pequeño
             character.AutoTransformEnable = true;
             character.Position = new Vector3(terrain.Size.X / 2f, 2000, terrain.Size.Z / 2f);
-            character.Scale = new Vector3(2.6f, 2.6f, 2.6f);
+            character.Scale = new Vector3(2.5f, 2.5f, 2.5f);
             character.rotateY(Geometry.DegreeToRadian(180f));
 
             //BoundingSphere que va a usar el personaje
@@ -101,6 +109,10 @@ namespace TGC.Group.Model
             collisionManager.GravityEnabled = true;
             collisionManager.GravityForce = new Vector3(0, -10, 0);
             collisionManager.SlideFactor = 0;
+
+            //Iniciarlizar PickingRay
+            pickingRay = new TgcPickingRay(Input);
+            selected = false;
 
             //Crear skybox
             skybox = new TgcSkyBox();
@@ -165,8 +177,9 @@ namespace TGC.Group.Model
             }
 
             //Posición de la camara.
-            //Camara = new TgcFpsCamera(character.Position, 1f , 0, Input);
-            camaraInterna = new TgcThirdPersonCamera(character.Position, new Vector3(0, 100, 0), 100, -400);
+            viewVector = new Vector3(0, 0, 0);
+            camaraInterna = new TgcFpsCamera(viewVector, 1f , 1f, 0.05f, Input);
+            camaraInterna.LockCam = true;
             Camara = camaraInterna;
 
             //Almacenar volumenes de colision del escenario
@@ -179,8 +192,8 @@ namespace TGC.Group.Model
             }
         }
 
-        float velocidadCaminar = 7.5f;
-        float velocidadRotacion = 80f;
+        float velocidadCaminar = 1f;
+        float velocidadRotacion = 150f;
         float jumping = 0;
         /// <summary>
         ///     Se llama en cada frame.
@@ -251,9 +264,7 @@ namespace TGC.Group.Model
                 //Rotar personaje y la camara, hay que multiplicarlo por el tiempo transcurrido para no atarse a la velocidad el hardware
                 var rotAngle = Geometry.DegreeToRadian(rotate * ElapsedTime);
                 character.rotateY(rotAngle);
-                camaraInterna.rotateY(rotAngle);
             }
-
             //Si hubo desplazamiento
             if (moving)
             {
@@ -280,8 +291,8 @@ namespace TGC.Group.Model
             var realMovement = collisionManager.moveCharacter(characterSphere, movementVector, objetosColisionables);
             character.move(realMovement);
             //Hacer que la camara siga al personaje en su nueva posicion
-            camaraInterna.Target = character.Position;
-
+            camaraInterna.SetCamera(new Vector3(character.Position.X, character.Position.Y +135f,character.Position.Z), new Vector3(FastMath.Sin(character.Rotation.Y), 0, FastMath.Cos(character.Rotation.Y)));
+            camaraInterna.UpdateCamera(ElapsedTime);
             //Capturar Input teclado
             if (Input.keyPressed(Key.Z))
             {
@@ -301,6 +312,27 @@ namespace TGC.Group.Model
             terrain.render();
             skybox.render();
 
+            //Si hacen clic con el mouse, ver si hay colision RayAABB
+            if (Input.buttonPressed(TgcD3dInput.MouseButtons.BUTTON_LEFT))
+            {
+                //Actualizar Ray de colision en base a posicion del mouse
+                pickingRay.updateRay();
+
+                //Testear Ray contra el AABB de todos los meshes
+                foreach (var mesh in models)
+                {
+                    var aabb = mesh.BoundingBox;
+
+                    //Ejecutar test, si devuelve true se carga el punto de colision collisionPoint
+                    selected = TgcCollisionUtils.intersectRayAABB(pickingRay.Ray, aabb, out collisionPoint);
+                    if (selected)
+                    {
+                        selectedMesh = mesh;
+                        break;
+                    }
+                }
+            }
+
             foreach (var mesh in models)
             {
                 mesh.Transform =
@@ -312,6 +344,16 @@ namespace TGC.Group.Model
                 if (BoundingBox)
                 {
                     mesh.BoundingBox.render();
+                }
+            }
+
+            if (selected)
+            {
+                if ((Math.Abs((selectedMesh.Position.X - character.Position.X)) < 500) && (Math.Abs((selectedMesh.Position.Z - character.Position.Z)) < 500))
+                {
+                    //Remuevo el mesh. TODO: Asignar a inventario de usuario conjunto de elementos segun tipo de mesh seleccionado y destruido
+                    models.Remove(selectedMesh);
+                    objetosColisionables.Remove(selectedMesh.BoundingBox);
                 }
             }
 
