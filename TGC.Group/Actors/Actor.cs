@@ -2,16 +2,16 @@
 
 namespace TGC.Group.Actors
 {
-    public class Actor : TgcSkeletalMesh
+    class Actor
     {
         private Inventory Inventory;
         private float Health { get; set; }
         private float Stamina { get; set; }
+        private int Weight { get; set; }
         private bool Thirsty { get; set; }
         private bool Hungry { get; set; }
         private bool Tired { get; set; }
         private bool Cooled { get; set; }
-        private int Weight { get; set; }
 
         public Actor()
         {

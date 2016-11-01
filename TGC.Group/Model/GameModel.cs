@@ -31,14 +31,12 @@ namespace TGC.Group.Model
     {
         private readonly List<TgcBoundingAxisAlignBox> objetosColisionables = new List<TgcBoundingAxisAlignBox>();
         private int itemId = 1;
-        private int weather = 1;
         private bool BoundingBox;
         private bool showInventory;
         private bool selected;
         private TgcPlane terrain;
         private List<TgcMesh> models;
         private TgcSkyBox skybox;
-        private Random numberGenerator;
         private TgcSkeletalMesh character;
         private SphereCollisionManager collisionManager;
         private TgcBoundingSphere characterSphere;
@@ -46,10 +44,11 @@ namespace TGC.Group.Model
         private TgcPickingRay pickingRay;
         private TgcMesh selectedMesh;
         private Vector3 collisionPoint;
-        private Actor actor;
-        private float velocidadCaminar = 10f;
+        private Actor actor = new Actor();
+        private float velocidadCaminar = 15f;
         private float velocidadRotacion = 150f;
         private float jumping = 0;
+        private int weatherIndex = 1;
 
         /// <summary>
         ///     Constructor del juego.
@@ -61,6 +60,48 @@ namespace TGC.Group.Model
             Category = Game.Default.Category;
             Name = Game.Default.Name;
             Description = Game.Default.Description;
+        }
+
+        public void changeWeather(int weatherIndex)
+        {
+            skybox.Center = new Vector3(0, 0, 0);
+            skybox.Size = new Vector3(terrain.Size.X + 4000, terrain.Size.Y + 4000, terrain.Size.Z + 4000);
+            switch (weatherIndex)
+            {
+                //Sunny
+                case 1:
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_up.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_down.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_left.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_right.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_front.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_back.png");
+
+                    actor.SetThirstStatus(true);
+                    //actor.SetStamina()
+                    break;
+                //Cloudy
+                case 2:
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_up.jpg");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_down.jpg");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_left.jpg");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_right.jpg");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_front.jpg");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_back.jpg");
+                    break;
+                //Blizzard
+                case 3:
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_up.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_down.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_left.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_right.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_front.png");
+                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_back.png");
+                    break;
+            }
+            skybox.SkyEpsilon = 25f;
+            skybox.Init();
+            return;
         }
 
         /// <summary>
@@ -75,9 +116,11 @@ namespace TGC.Group.Model
             var positionX = 1;
             var sceneLoader = new TgcSceneLoader();
             var skeletalLoader = new TgcSkeletalLoader();
-            
-            models = new List<TgcMesh>();
+            var numberGenerator = new Random();
 
+            skybox = new TgcSkyBox();
+            models = new List<TgcMesh>();
+            
             //Crear suelo
             var terrainTexture = TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\grass.jpg");
@@ -94,27 +137,28 @@ namespace TGC.Group.Model
                        new[]
                        {
                            MediaDir + "SkeletalAnimations\\BasicHuman\\Animations\\Walk-TgcSkeletalAnim.xml",
-                           MediaDir + "SkeletalAnimations\\BasicHuman\\Animations\\StandBy-TgcSkeletalAnim.xml"
+                           MediaDir + "SkeletalAnimations\\BasicHuman\\Animations\\StandBy-TgcSkeletalAnim.xml",
+                           MediaDir + "SkeletalAnimations\\BasicHuman\\Animations\\Jump-TgcSkeletalAnim.xml"
                        });
-
+            
             //Configurar animacion inicial
             character.playAnimation("StandBy", true);
             character.AutoTransformEnable = true;
             character.Position = new Vector3(terrain.Size.X / 2f, 2000, terrain.Size.Z / 2f);
             character.Scale = new Vector3(2.5f, 2.5f, 2.5f);
             character.rotateY(Geometry.DegreeToRadian(180f));
-
+            
             //BoundingSphere que va a usar el personaje
             character.AutoUpdateBoundingBox = false;
             characterSphere = new TgcBoundingSphere(character.BoundingBox.calculateBoxCenter(),
                 character.BoundingBox.calculateBoxRadius());
-
+            
             //Crear manejador de colisiones
             collisionManager = new SphereCollisionManager();
             collisionManager.GravityEnabled = true;
             collisionManager.GravityForce = new Vector3(0, -10, 0);
             collisionManager.SlideFactor = 0;
-
+            
             //Creo todos los items del juego e inicializo inventario del actor
             var item = new Item(itemId, "Agua", 1, 5, TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\water-icon.png"));
@@ -128,21 +172,12 @@ namespace TGC.Group.Model
             pickingRay = new TgcPickingRay(Input);
             selected = false;
 
-            //Crear skybox
-            skybox = new TgcSkyBox();
-            skybox.Center = new Vector3(0, 0, 0);
-            skybox.Size = new Vector3(terrain.Size.X + 4000, terrain.Size.Y + 4000, terrain.Size.Z + 4000);
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_up.png");
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_down.png");
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_left.png");
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_right.png");
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_front.png");
-            skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_back.png");
-            skybox.SkyEpsilon = 25f;
-            skybox.Init();
-
+            //Inicializar estado climatico
+            changeWeather(weatherIndex);
+            
             //Modelo 1: Arbol - template
             var template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\ArbolSelvatico2\\ArbolSelvatico2-TgcScene.xml").Meshes[0];
+            
             while (iterator <= Game.Default.Config_01_TreesVolume)
             {
                 var size = numberGenerator.Next(4, 15);
@@ -151,7 +186,7 @@ namespace TGC.Group.Model
                 positionX = positionX + (int)Math.Ceiling(terrain.Size.X / Game.Default.Config_01_TreesVolume);
                 iterator = iterator + 1;
             }
-
+            
             //Modelo 2: Roca - template
             template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\Roca\\Roca-TgcScene.xml").Meshes[0];
             iterator = 1;
@@ -164,7 +199,7 @@ namespace TGC.Group.Model
                 positionX = positionX + (int)Math.Ceiling(terrain.Size.X / Game.Default.Config_02_RocksVolume);
                 iterator = iterator + 1;
             }
-
+            
             //Modelo 3: Pasto - template
             template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\Pasto\\Pasto-TgcScene.xml").Meshes[0];
             iterator = 1;
@@ -176,7 +211,7 @@ namespace TGC.Group.Model
                 positionX = positionX + (int)Math.Ceiling(terrain.Size.X / Game.Default.Config_03_GrassVolume);
                 iterator = iterator + 1;
             }
-
+            
             //Modelo 4: Arbusto - template
             template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\Arbusto\\Arbusto-TgcScene.xml").Meshes[0];
             iterator = 1;
@@ -189,11 +224,11 @@ namespace TGC.Group.Model
                 positionX = positionX + (int)Math.Ceiling(terrain.Size.X / Game.Default.Config_04_BushesVolume);
                 iterator = iterator + 1;
             }
-
+            
             //Posición de la camara.
             camaraInterna = new TgcThirdPersonCamera(character.Position, new Vector3(0, 100, 0), 100, -400);
             Camara = camaraInterna;
-
+            
             //Almacenar volumenes de colision del escenario
             objetosColisionables.Clear();
             objetosColisionables.Add(terrain.BoundingBox);
@@ -202,41 +237,7 @@ namespace TGC.Group.Model
                 if (!((mesh.Name.Contains("03_Pasto_")) || (mesh.Name.Contains("04_Arbusto_"))))
                     objetosColisionables.Add(mesh.BoundingBox);
             }
-        }
-
-        public void changeWeather(int weatherIndex)
-        {
-            switch (weatherIndex)
-            {
-                case 1:
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_up.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_down.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_left.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_right.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_front.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_back.png");
-                    break;
-                case 2:
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_up.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_down.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_left.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_right.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_front.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_sunny\\skybox_sunny_back.png");
-                    break;
-                case 3:
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Up, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_up.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Down, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_down.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Left, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_left.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Right, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_right.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_front.png");
-                    skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_sunny_back.png");
-                    break;
-            }
-            skybox.SkyEpsilon = 25f;
-            skybox.Init();
-            return;
-        }
+        }        
 
         /// <summary>
         ///     Se llama en cada frame.
@@ -245,6 +246,7 @@ namespace TGC.Group.Model
         /// </summary>
         public override void Update()
         {
+            var numberGenerator = new Random();
             PreUpdate();
 
             D3DDevice.Instance.Device.Transform.Projection =
@@ -260,6 +262,7 @@ namespace TGC.Group.Model
             var moving = false;
             var rotating = false;
             float jump = 0;
+            float tiredFactor = actor.GetStamina() / 100;
 
             //Adelante
             if (Input.keyDown(Key.W))
@@ -301,6 +304,19 @@ namespace TGC.Group.Model
                 moving = true;
             }
 
+            if (actor.GetStamina() <= 40)
+            {
+                actor.SetFatigueStatus(true);
+                if (actor.GetStamina() <= 0)
+                {
+                    moving = false;
+                }
+            }
+            else
+            {
+                actor.SetFatigueStatus(false);
+            }
+
             //Si hubo rotacion
             if (rotating)
             {
@@ -309,17 +325,22 @@ namespace TGC.Group.Model
                 character.rotateY(rotAngle);
                 camaraInterna.rotateY(rotAngle);
             }
-            //Si hubo desplazamiento
+            //Acciones según actividad
             if (moving)
             {
-                //Activar animacion de caminando
                 character.playAnimation("Walk", true);
+                if (actor.GetStamina() >= 0)
+                {
+                    actor.SetStamina(actor.GetStamina() - (1 / actor.GetStamina() * 4));
+                }
             }
-
-            //Si no se esta moviendo, activar animacion de Parado
             else
             {
                 character.playAnimation("StandBy", true);
+                if ((actor.GetStamina() < 100) && (actor.GetStamina() >= 0))
+                {
+                    actor.SetStamina(actor.GetStamina() + 40 + ElapsedTime);
+                }
             }
 
             //Vector de movimiento
@@ -327,24 +348,35 @@ namespace TGC.Group.Model
             if (moving)
             {
                 //Aplicar movimiento, desplazarse en base a la rotacion actual del personaje
-                movementVector = new Vector3(FastMath.Sin(character.Rotation.Y) * moveForward, jump,
-                    FastMath.Cos(character.Rotation.Y) * moveForward);
+                movementVector = new Vector3(FastMath.Sin(character.Rotation.Y) * moveForward * tiredFactor, jump,
+                    FastMath.Cos(character.Rotation.Y) * moveForward * tiredFactor);
             }
 
             //Mover personaje con detección de colisiones, sliding y gravedad
             var realMovement = collisionManager.moveCharacter(characterSphere, movementVector, objetosColisionables);
             character.move(realMovement);
+
             //Hacer que la camara siga al personaje en su nueva posicion
             camaraInterna.Target = character.Position;
             camaraInterna.UpdateCamera(ElapsedTime);
-            
-            //Probabilidad de que cambie el estado climatico de 1:32
-            if (numberGenerator.Next(1,32) == 1)
+
+            //Probabilidad de que cambie el estado climatico de 1:3000
+            if (numberGenerator.Next(1, 2000) == 1)
             {
-                weather = numberGenerator.Next(1, 3);
-                changeWeather(weather);
+                weatherIndex = numberGenerator.Next(1, 4);
+                changeWeather(weatherIndex);
             }
-            
+
+            //Fix Stamina, Health del actor
+            if (actor.GetStamina() > 100)
+                actor.SetStamina(100);
+            if (actor.GetHealth() > 100)
+                actor.SetHealth(100);
+            if (actor.GetStamina() < 0)
+                actor.SetStamina(0);
+            if (actor.GetHealth() < 0)
+                actor.SetHealth(0);
+
             //Capturar Input teclado
             if (Input.keyPressed(Key.Z))
             {
@@ -418,14 +450,20 @@ namespace TGC.Group.Model
                 }
             }
 
-            if (showInventory)
+            /*(if (showInventory)
             {
                 inventory.render();
-            }
+            }*/
 
             //Render personaje
             character.animateAndRender(ElapsedTime);
-
+            DrawText.drawText("Health: " + actor.GetHealth(), 5, 20, System.Drawing.Color.Red);
+            DrawText.drawText("Stamina: "+actor.GetStamina(), 5, 40, System.Drawing.Color.Red);
+            if (actor.GetFatigueStatus())
+            {
+                DrawText.drawText("TIRED", 5, 60, System.Drawing.Color.Red);
+            }
+            
             PostRender();
         }
 
