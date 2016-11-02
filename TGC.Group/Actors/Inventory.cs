@@ -9,30 +9,36 @@ namespace TGC.Group.Actors
         private int Weight;
 
         public Inventory(){
-            Items = new List<Item>(10);
+            Items = new List<Item>(20);
             Weight = 0;
         }
 
         public void AddItem(Item item)
         {
             this.Items.Add(item);
+            SetWeight(this.Weight + item.GetWeight());
+        }
+
+        public void RemoveItem(Item item)
+        {
+            this.Items.Remove(item);
+            SetWeight(this.Weight - item.GetWeight());
+        }
+
+        public int GetFreeSpace()
+        {
+            return (this.Items.Capacity - this.Items.Count);
+        }
+
+        public Item GetItemByID(int itemId)
+        {
+            return Items.Find(item => itemId == item.GetId());
         }
 
         // Setters & Getters
         public void SetWeight(int value) { Weight = value; }
-        public void SetWeight()
-        {
-            Weight = 0;
-            foreach (var item in Items)
-            {
-                Weight = Weight + item.GetWeight();
-            }
-        }
 
         public int GetWeight() { return Weight; }
-        public Item GetItem(int itemId)
-        {
-            return Items.Find(item => itemId == item.GetId());
-        }
+        public List<Item> GetItems() { return Items; }
     }
 }

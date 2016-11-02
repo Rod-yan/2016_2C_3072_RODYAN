@@ -30,10 +30,10 @@ namespace TGC.Group.Model
     public class GameModel : TgcExample
     {
         private readonly List<TgcBoundingAxisAlignBox> objetosColisionables = new List<TgcBoundingAxisAlignBox>();
-        private int itemId = 1;
         private bool BoundingBox;
         private bool showInventory;
         private bool selected;
+        private Random numberGenerator = new Random();
         private TgcPlane terrain;
         private List<TgcMesh> models;
         private TgcSkyBox skybox;
@@ -49,6 +49,7 @@ namespace TGC.Group.Model
         private float velocidadRotacion = 150f;
         private float jumping = 0;
         private int weatherIndex = 1;
+        private int itemId = 1;
 
         /// <summary>
         ///     Constructor del juego.
@@ -104,6 +105,27 @@ namespace TGC.Group.Model
             return;
         }
 
+        public void inventoryInitializer()
+        {
+            //Creo todos los items del juego e inicializo inventario del actor
+            var item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                 MediaDir + "\\Textures\\Water_icon.png"));
+            itemId = itemId + 1;
+            actor.GetInventory().AddItem(item);
+
+            item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                 MediaDir + "\\Textures\\Water_icon.png"));
+            itemId = itemId + 1;
+            actor.GetInventory().AddItem(item);
+
+            item = new Item(itemId, "Leather", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                 MediaDir + "\\Textures\\Leather_icon.png"));
+            itemId = itemId + 1;
+            actor.GetInventory().AddItem(item);
+
+            return;
+        }
+
         /// <summary>
         ///     Se llama una sola vez, al principio cuando se ejecuta el ejemplo.
         ///     Escribir aquí todo el código de inicialización: cargar modelos, texturas, estructuras de optimización, todo
@@ -116,7 +138,6 @@ namespace TGC.Group.Model
             var positionX = 1;
             var sceneLoader = new TgcSceneLoader();
             var skeletalLoader = new TgcSkeletalLoader();
-            var numberGenerator = new Random();
 
             skybox = new TgcSkyBox();
             models = new List<TgcMesh>();
@@ -158,15 +179,9 @@ namespace TGC.Group.Model
             collisionManager.GravityEnabled = true;
             collisionManager.GravityForce = new Vector3(0, -10, 0);
             collisionManager.SlideFactor = 0;
-            
-            //Creo todos los items del juego e inicializo inventario del actor
-            var item = new Item(itemId, "Agua", 1, 5, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                 MediaDir + "\\Textures\\water-icon.png"));
-            itemId = itemId + 1;
-            actor.GetInventory().AddItem(item);
 
-            /*item = new Item(itemId, "Madera", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                 MediaDir + "\\Textures\\water-icon.png"));*/
+            //Inventario inicial del actor
+            inventoryInitializer();
 
             //Iniciarlizar PickingRay
             pickingRay = new TgcPickingRay(Input);
@@ -235,7 +250,9 @@ namespace TGC.Group.Model
             foreach (var mesh in models)
             {
                 if (!((mesh.Name.Contains("03_Pasto_")) || (mesh.Name.Contains("04_Arbusto_"))))
+                {
                     objetosColisionables.Add(mesh.BoundingBox);
+                }
             }
         }        
 
@@ -246,7 +263,6 @@ namespace TGC.Group.Model
         /// </summary>
         public override void Update()
         {
-            var numberGenerator = new Random();
             PreUpdate();
 
             D3DDevice.Instance.Device.Transform.Projection =
@@ -262,7 +278,7 @@ namespace TGC.Group.Model
             var moving = false;
             var rotating = false;
             float jump = 0;
-            float tiredFactor = actor.GetStamina() / 100;
+            float tiredFactor = actor.GetStamina() / 100 ;
 
             //Adelante
             if (Input.keyDown(Key.W))
@@ -304,6 +320,11 @@ namespace TGC.Group.Model
                 moving = true;
             }
 
+            if (actor.GetInventory().GetWeight() >= Game.Default.Config_MaxWeight)
+            {
+                moving = false;
+            }
+
             if (actor.GetStamina() <= 40)
             {
                 actor.SetFatigueStatus(true);
@@ -331,7 +352,7 @@ namespace TGC.Group.Model
                 character.playAnimation("Walk", true);
                 if (actor.GetStamina() >= 0)
                 {
-                    actor.SetStamina(actor.GetStamina() - (1 / actor.GetStamina() * 4));
+                    actor.SetStamina(actor.GetStamina() - (1 / (actor.GetStamina() + actor.GetInventory().GetWeight()) * 3));
                 }
             }
             else
@@ -439,15 +460,149 @@ namespace TGC.Group.Model
             {
                 if ((Math.Abs((selectedMesh.BoundingBox.Position.X - character.Position.X)) < 300) && (Math.Abs((selectedMesh.BoundingBox.Position.Z - character.Position.Z)) < 300))
                 {
-                    //Remuevo el mesh. TODO: Asignar a inventario de usuario conjunto de elementos segun tipo de mesh seleccionado y destruido
+                    //Agrego items del objeto seleccionado al inventario del actor
+                    if (actor.GetInventory().GetFreeSpace() != 0)
+                    {
+                        int itemsObtained;
+
+                        if (actor.GetInventory().GetFreeSpace() >= 3)
+                        {
+                            itemsObtained = numberGenerator.Next(0, 4);
+                        }
+                        else
+                        {
+                            itemsObtained = numberGenerator.Next(0, actor.GetInventory().GetFreeSpace() + 1);
+                        }
+                        int pickItemType;
+                        Item item;
+                        int iterator = 0;
+
+                        if (selectedMesh.Name.Contains("01_Arbol_"))
+                        {
+                            while (iterator < itemsObtained)
+                            {
+                                pickItemType = numberGenerator.Next(1, 6);
+                                switch (pickItemType)
+                                {
+                                    case 1:
+                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 2:
+                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 3:
+                                        item = new Item(itemId, "Charcoal", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Charcoal_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 4:
+                                        item = new Item(itemId, "Wood", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Wood_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 5:
+                                        item = new Item(itemId, "Fiber", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                }
+                                itemId = itemId + 1;
+                                iterator = iterator + 1;
+                            }
+                        }
+                        else if (selectedMesh.Name.Contains("02_Roca_"))
+                        {
+                            while (iterator < itemsObtained)
+                            {
+                                pickItemType = numberGenerator.Next(1, 3);
+                                switch (pickItemType)
+                                {
+                                    case 1:
+                                        item = new Item(itemId, "Stone", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Stone_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 2:
+                                        item = new Item(itemId, "Metal", 3, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Metal_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                }
+                                itemId = itemId + 1;
+                                iterator = iterator + 1;
+                            }
+                        }
+                        else if (selectedMesh.Name.Contains("03_Pasto_"))
+                        {
+                            while (iterator < itemsObtained)
+                            {
+                                pickItemType = numberGenerator.Next(1, 4);
+                                switch (pickItemType)
+                                {
+                                    case 1:
+                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 2:
+                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 3:
+                                        item = new Item(itemId, "Fiber", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                }
+                                itemId = itemId + 1;
+                                iterator = iterator + 1;
+                            }
+                        }
+                        else if (selectedMesh.Name.Contains("04_Arbusto_"))
+                        {
+                            while (iterator < itemsObtained)
+                            {
+                                pickItemType = numberGenerator.Next(1, 5);
+                                switch (pickItemType)
+                                {
+                                    case 1:
+                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 2:
+                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 3:
+                                        item = new Item(itemId, "Fiber", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                    case 4:
+                                        item = new Item(itemId, "Banana", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        actor.GetInventory().AddItem(item);
+                                        break;
+                                }
+                                itemId = itemId + 1;
+                                iterator = iterator + 1;
+                            }
+                        }
+                    }
+
                     models.Remove(selectedMesh);
                     objetosColisionables.Remove(selectedMesh.BoundingBox);
                 }
-                else
-                {
-                    selectedMesh = null;
-                    selected = false;
-                }
+
+                selectedMesh = null;
+                selected = false;
             }
 
             /*(if (showInventory)
@@ -458,10 +613,22 @@ namespace TGC.Group.Model
             //Render personaje
             character.animateAndRender(ElapsedTime);
             DrawText.drawText("Health: " + actor.GetHealth(), 5, 20, System.Drawing.Color.Red);
-            DrawText.drawText("Stamina: "+actor.GetStamina(), 5, 40, System.Drawing.Color.Red);
+            DrawText.drawText("Stamina: "+ actor.GetStamina(), 5, 40, System.Drawing.Color.Red);
+            DrawText.drawText("Weight: " + actor.GetInventory().GetWeight(), 5, 60, System.Drawing.Color.Red);
+            DrawText.drawText("FreeSpace: " + actor.GetInventory().GetFreeSpace(), 5, 80, System.Drawing.Color.Red);
             if (actor.GetFatigueStatus())
             {
-                DrawText.drawText("TIRED", 5, 60, System.Drawing.Color.Red);
+                DrawText.drawText("TIRED", 5, 100, System.Drawing.Color.Red);
+            }
+            if (actor.GetInventory().GetWeight() >= Game.Default.Config_MaxWeight)
+            {
+                DrawText.drawText("OVERWEIGHT", 5, 120, System.Drawing.Color.Red);
+            }
+            var positionY = 0;
+            foreach (var item in actor.GetInventory().GetItems())
+            {
+                DrawText.drawText("Item Name: " + item.GetName() + " ID: " + item.GetId(), 500, positionY, System.Drawing.Color.Red);
+                positionY = positionY + 20;
             }
             
             PostRender();

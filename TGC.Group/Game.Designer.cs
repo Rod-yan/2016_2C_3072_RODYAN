@@ -142,5 +142,17 @@ namespace TGC.Group {
                 this["Config_MapSizeMultiplier"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
+        public int Config_MaxWeight {
+            get {
+                return ((int)(this["Config_MaxWeight"]));
+            }
+            set {
+                this["Config_MaxWeight"] = value;
+            }
+        }
     }
 }

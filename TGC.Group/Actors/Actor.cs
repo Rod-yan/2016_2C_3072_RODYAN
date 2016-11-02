@@ -7,7 +7,6 @@ namespace TGC.Group.Actors
         private Inventory Inventory;
         private float Health { get; set; }
         private float Stamina { get; set; }
-        private int Weight { get; set; }
         private bool Thirsty { get; set; }
         private bool Hungry { get; set; }
         private bool Tired { get; set; }
@@ -21,7 +20,6 @@ namespace TGC.Group.Actors
             this.Tired = false;
             this.Thirsty = false;
             this.Cooled = false;
-            this.Weight = 0;
             this.Inventory = new Inventory();
         }
 
@@ -32,11 +30,6 @@ namespace TGC.Group.Actors
         public void SetHungerStatus(bool value) { Hungry = value; }
         public void SetFatigueStatus(bool value) { Tired = value; }
         public void SetColdStatus(bool value) { Cooled = value; }
-        public void SetWeight(int value) { Weight = value; }
-        public void SetWeight()
-        {
-            Weight = Inventory.GetWeight();
-        }
         
         public float GetHealth() { return Health; }
         public float GetStamina() { return Stamina; }
@@ -44,7 +37,6 @@ namespace TGC.Group.Actors
         public bool GetHungerStatus() { return Hungry; }
         public bool GetFatigueStatus() { return Tired; }
         public bool GetColdStatus() { return Cooled; }
-        public int GetWeight() { return Weight; }
         public Inventory GetInventory() { return Inventory; }
     }
 }
