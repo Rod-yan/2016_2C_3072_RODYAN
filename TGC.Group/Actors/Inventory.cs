@@ -35,6 +35,15 @@ namespace TGC.Group.Actors
             return Items.Find(item => itemId == item.GetId());
         }
 
+        public void ResetWeight()
+        {
+            this.Weight = 0;
+            foreach (var item in this.Items)
+            {
+                SetWeight(this.Weight + item.GetWeight());
+            }
+        }
+
         // Setters & Getters
         public void SetWeight(int value) { Weight = value; }
 
