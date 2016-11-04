@@ -4,22 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TGC.Core.Textures;
+using TGC.Core.SceneLoader;
+using TGC.Core.Geometry;
 
 namespace TGC.Group.Items
 {
-    class Item
+    class Item : TgcMesh
     {
         private int Id;
-        private string Name;
         private int Weight;
         private TgcTexture Icon;
 
-        public Item(int id, string name, int weight, TgcTexture texture)
+        public Item(int id, string name, int weight, TgcTexture icon)
         {
             this.Id = id;
             this.Name = name;
             this.Weight = weight;
-            this.Icon = texture;
+            this.Icon = icon;
+            this.AlphaBlendEnable = true;
         }
 
         // Setters & Getters

@@ -154,5 +154,17 @@ namespace TGC.Group {
                 this["Config_MaxWeight"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int Config_WalkingSpeed {
+            get {
+                return ((int)(this["Config_WalkingSpeed"]));
+            }
+            set {
+                this["Config_WalkingSpeed"] = value;
+            }
+        }
     }
 }

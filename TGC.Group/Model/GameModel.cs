@@ -1,14 +1,20 @@
 using Microsoft.DirectX;
+using System.IO;
 using Microsoft.DirectX.Direct3D;
 using Microsoft.DirectX.DirectInput;
 using System.Collections.Generic;
+using System.Drawing;
 using TGC.Group.Camara;
+using TGC.Group.Form;
 using TGC.Group.Actors;
 using TGC.Group.Collision;
 using TGC.Group.Items;
 using TGC.Core.Input;
+using TGC.Core.Fog;
+using TGC.Core.Shaders;
 using TGC.Core.Direct3D;
 using TGC.Core.Utils;
+using TGC.Core.Text;
 using TGC.Core.BoundingVolumes;
 using TGC.Core.Example;
 using TGC.Core.Geometry;
@@ -31,9 +37,11 @@ namespace TGC.Group.Model
     {
         private readonly List<TgcBoundingAxisAlignBox> objetosColisionables = new List<TgcBoundingAxisAlignBox>();
         private bool BoundingBox;
-        private bool showInventory;
         private bool selected;
         private Random numberGenerator = new Random();
+        private Microsoft.DirectX.Direct3D.Effect effect;
+        private TgcFog fog;
+        private EjemploDefaultHelpForm helpForm;
         private TgcPlane terrain;
         private TgcPlane healthBar;
         private TgcPlane staminaBar;
@@ -42,7 +50,9 @@ namespace TGC.Group.Model
         private TgcPlane hungerIcon;
         private TgcPlane fatigueIcon;
         private TgcPlane overweightIcon;
+        private TgcPlane inventoryBoard;
         private List<TgcMesh> models;
+        private List<TgcMesh> inventoryHUD = new List<TgcMesh>();
         private TgcSkyBox skybox;
         private TgcSkeletalMesh character;
         private SphereCollisionManager collisionManager;
@@ -50,13 +60,22 @@ namespace TGC.Group.Model
         private TgcThirdPersonCamera camaraInterna;
         private TgcPickingRay pickingRay;
         private TgcMesh selectedMesh;
+        private Item selectedItem;
+        private TgcText2D inventoryText;
+        private TgcText2D weightText;
+        private TgcText2D healthText;
+        private TgcText2D staminaText;
+        private TgcText2D youAreDeadText;
+        private TgcText2D godModeText;
         private Vector3 collisionPoint;
         private Actor actor = new Actor();
         private float jumping = 0;
-        private int weatherIndex = 3; // El estado clim·tico es soleado por defecto
+        private int weatherIndex = 1; // Soleado por defecto (1), Nublado (2), Tormenta de nieve (3)
         private int itemId = 1;
         private bool showHUD = true;
         private bool godMode = false;
+        private bool showInventory = false;
+        private bool fogEnabled = false;
 
         /// <summary>
         ///     Constructor del juego.
@@ -87,6 +106,8 @@ namespace TGC.Group.Model
                     terrain.setTexture(TgcTexture.createTexture(D3DDevice.Instance.Device,
                         MediaDir + "\\Textures\\grass.jpg"));
 
+                    fogEnabled = false;
+
                     actor.SetColdStatus(false);
 
                     if (numberGenerator.Next(1, 10) == 5)
@@ -102,6 +123,8 @@ namespace TGC.Group.Model
                     skybox.setFaceTexture(TgcSkyBox.SkyFaces.Front, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_front.jpg");
                     skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_cloudy\\skybox_cloudy_back.jpg");
 
+                    fogEnabled = false;
+
                     if (numberGenerator.Next(1, 5) == 3)
                         actor.SetColdStatus(true);
 
@@ -116,6 +139,9 @@ namespace TGC.Group.Model
                     skybox.setFaceTexture(TgcSkyBox.SkyFaces.Back, MediaDir + "\\Textures\\Skybox_blizzard\\skybox_blizzard_back.png");
                     terrain.setTexture(TgcTexture.createTexture(D3DDevice.Instance.Device,
                         MediaDir + "\\Textures\\snow.jpg"));
+
+                    fogEnabled = false;
+
                     if (numberGenerator.Next(1, 3) == 1)
                         actor.SetColdStatus(true);
 
@@ -136,22 +162,22 @@ namespace TGC.Group.Model
         public void inventoryInitializer()
         {
             //Inicializo inventario del actor
-            var item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+            var item = new Item(itemId, "00_Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\Water_icon.png"));
             itemId = itemId + 1;
             actor.GetInventory().AddItem(item);
 
-            item = new Item(itemId, "Apple", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+            item = new Item(itemId, "00_Apple", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\Apple_icon.png"));
             itemId = itemId + 1;
             actor.GetInventory().AddItem(item);
 
-            item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+            item = new Item(itemId, "00_Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\Water_icon.png"));
             itemId = itemId + 1;
             actor.GetInventory().AddItem(item);
 
-            item = new Item(itemId, "Leather", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+            item = new Item(itemId, "00_Leather", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\Leather_icon.png"));
             itemId = itemId + 1;
             actor.GetInventory().AddItem(item);
@@ -174,7 +200,14 @@ namespace TGC.Group.Model
 
             skybox = new TgcSkyBox();
             models = new List<TgcMesh>();
-            
+
+            var helpRtf = File.ReadAllText(MediaDir + "\\help.rtf");
+            helpForm = new EjemploDefaultHelpForm(helpRtf);
+
+            //Cargar Shader personalizado
+            effect = TgcShaders.loadEffect(ShadersDir + "TgcFogShader.fx");
+            fog = new TgcFog();
+
             //Crear suelo
             var terrainTexture = TgcTexture.createTexture(D3DDevice.Instance.Device,
                  MediaDir + "\\Textures\\grass.jpg");
@@ -258,6 +291,59 @@ namespace TGC.Group.Model
             overweightIcon = new TgcPlane(new Vector3(), new Vector3(10, 10, 0), TgcPlane.Orientations.XYplane, barTexture, 1f, 1f);
             overweightIcon.AlphaBlendEnable = true;
 
+            inventoryBoard = new TgcPlane(new Vector3(),
+                                          new Vector3(250, 250, 0), TgcPlane.Orientations.XYplane,
+                                          TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                                   MediaDir + "\\Textures\\inventoryboard.jpg"), 1f, 1f
+                                         );
+            //Texto de inventario
+            inventoryText = new TgcText2D();
+            inventoryText.Position = new Point(1600, 900);
+            inventoryText.Size = new Size(500, 100);
+            inventoryText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
+            inventoryText.Color = Color.Yellow;
+            inventoryText.Align = TgcText2D.TextAlign.LEFT;
+
+            //Texto de Peso
+            weightText = new TgcText2D();
+            weightText.Position = new Point(1600, 930);
+            weightText.Size = new Size(500, 100);
+            weightText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
+            weightText.Color = Color.Yellow;
+            weightText.Align = TgcText2D.TextAlign.LEFT;
+
+            //Texto de Salud
+            healthText = new TgcText2D();
+            healthText.Position = new Point(150, 900);
+            healthText.Size = new Size(500, 100);
+            healthText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
+            healthText.Color = Color.LightSalmon;
+            healthText.Align = TgcText2D.TextAlign.LEFT;
+
+            //Texto de Aguante
+            staminaText = new TgcText2D();
+            staminaText.Position = new Point(150, 930);
+            staminaText.Size = new Size(500, 100);
+            staminaText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
+            staminaText.Color = Color.LightGreen;
+            staminaText.Align = TgcText2D.TextAlign.LEFT;
+
+            //Texto de Personaje Muerto
+            youAreDeadText = new TgcText2D();
+            youAreDeadText.Position = new Point(500, 500);
+            youAreDeadText.Size = new Size(500, 100);
+            youAreDeadText.changeFont(new System.Drawing.Font("TimesNewRoman", 52, FontStyle.Regular));
+            youAreDeadText.Color = Color.Tomato;
+            youAreDeadText.Align = TgcText2D.TextAlign.LEFT;
+
+            //Texto de Personaje Muerto
+            godModeText = new TgcText2D();
+            godModeText.Position = new Point(900, 20);
+            godModeText.Size = new Size(500, 100);
+            godModeText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
+            godModeText.Color = Color.Blue;
+            godModeText.Align = TgcText2D.TextAlign.LEFT;
+
             //Modelo 1: Arbol - template
             var template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\ArbolSelvatico2\\ArbolSelvatico2-TgcScene.xml").Meshes[0];
             
@@ -269,7 +355,7 @@ namespace TGC.Group.Model
                 positionX = positionX + (int)Math.Ceiling(terrain.Size.X / Game.Default.Config_01_TreesVolume);
                 iterator = iterator + 1;
             }
-            
+
             //Modelo 2: Roca - template
             template = sceneLoader.loadSceneFromFile(MediaDir + "MeshCreator\\Meshes\\Vegetacion\\Roca\\Roca-TgcScene.xml").Meshes[0];
             iterator = 1;
@@ -331,7 +417,7 @@ namespace TGC.Group.Model
         /// </summary>
         public override void Update()
         {
-            float velocidadCaminar = 1f;
+            float velocidadCaminar = Game.Default.Config_WalkingSpeed;
             float velocidadRotacion = 150f;
 
             PreUpdate();
@@ -350,11 +436,20 @@ namespace TGC.Group.Model
             float rotate = 0;
             var moving = false;
             var rotating = false;
+            var columnCount = 1;
+            int iconOffsetX = -110;
+            int iconOffsetY = 280;
             float jump = 0;
             float thirstEffect = 0;
             float hungerEffect = 0;
             float coldEffect = 0;
             float tiredFactor = actor.GetStamina() / 35 ;
+
+            //Mostrar inventario
+            if (Input.keyPressed(Key.I))
+            {
+                showInventory = !showInventory;
+            }
 
             //Adelante
             if (Input.keyDown(Key.W))
@@ -423,12 +518,12 @@ namespace TGC.Group.Model
                 camaraInterna.rotateY(rotAngle);
             }
             //Acciones seg˙n actividad
-            if (moving)
+            if (moving && !showInventory)
             {
                 character.playAnimation("Walk", true);
                 if (actor.GetStamina() >= 0)
                 {
-                    actor.SetStamina(actor.GetStamina() - (0.25f / (actor.GetStamina() + actor.GetInventory().GetWeight())));
+                    actor.SetStamina(actor.GetStamina() - (0.6f / (actor.GetStamina() + actor.GetInventory().GetWeight())));
                 }
             }
             else
@@ -442,7 +537,7 @@ namespace TGC.Group.Model
 
             //Vector de movimiento
             var movementVector = Vector3.Empty;
-            if (moving)
+            if (moving && !showInventory && (actor.GetHealth() > 0))
             {
                 //Aplicar movimiento, desplazarse en base a la rotacion actual del personaje
                 movementVector = new Vector3(FastMath.Sin(character.Rotation.Y) * moveForward * tiredFactor, jump,
@@ -458,7 +553,7 @@ namespace TGC.Group.Model
             camaraInterna.UpdateCamera(ElapsedTime);
 
             //Probabilidad de que cambie el estado climatico de 1:3000
-            if (numberGenerator.Next(1, 5000) == 2500)
+            if ((numberGenerator.Next(1, 5000) == 2500) && (actor.GetHealth() > 0))
             {
                 weatherIndex = numberGenerator.Next(1, 4);
                 changeWeather(weatherIndex);
@@ -471,11 +566,11 @@ namespace TGC.Group.Model
             }
             if (actor.GetHungerStatus())
             {
-                hungerEffect = 0.001f;
+                hungerEffect = 0.002f;
             }
             if (actor.GetThirstStatus())
             {
-                thirstEffect = 0.001f;
+                thirstEffect = 0.002f;
             }
 
             //Modificadores a la salud del actor
@@ -488,8 +583,11 @@ namespace TGC.Group.Model
                 actor.SetHealth(100);
             if (actor.GetStamina() < 0)
                 actor.SetStamina(0);
-            if (actor.GetHealth() < 0)
+            if (actor.GetHealth() <= 0)
+            {
                 actor.SetHealth(0);
+                actor.SetStamina(0);
+            }
 
             // HUD
             healthBar.Origin = new Vector3(character.Position.X - 50, character.Position.Y + 140, character.Position.Z);
@@ -515,22 +613,49 @@ namespace TGC.Group.Model
             overweightIcon.Origin = new Vector3(character.Position.X + 35, character.Position.Y + 145, character.Position.Z);
             overweightIcon.updateValues();
 
-            //Capturar Input teclado
+            inventoryBoard.Origin = new Vector3(character.Position.X - 120, character.Position.Y + 50, character.Position.Z - 99f);
+            inventoryBoard.updateValues();
+
+            //Doy formato visual al inventario
+            if (showInventory && (actor.GetHealth() > 0))
+            {
+                inventoryHUD.Clear();
+                foreach (var item in actor.GetInventory().GetItems())
+                {
+                    if (columnCount == 7)
+                    {
+                        iconOffsetY = iconOffsetY - 40;
+                        iconOffsetX = -110;
+                        columnCount = 1;
+                    }
+
+                    var itemIcon = new TgcPlane(new Vector3(character.Position.X + iconOffsetX, character.Position.Y + iconOffsetY, character.Position.Z - 100f), new Vector3(10, 10, 0), TgcPlane.Orientations.XYplane, item.GetIcon(), 1f, 1f);
+                    iconOffsetX = iconOffsetX + 40;
+                    columnCount = columnCount + 1;
+
+                    inventoryHUD.Add(itemIcon.toMesh(item.GetId()+""));
+                }
+            }
+
+            //Actualizo textos de status
+            healthText.Text = "ÅHEALTH: " + (int)actor.GetHealth();
+            staminaText.Text = "ÅSTAMINA: " + (int)actor.GetStamina();
+            inventoryText.Text = "ÅINVENTORY: "+actor.GetInventory().GetItems().Count+" / 20";
+            weightText.Text = "ÅWEIGHT: " + actor.GetInventory().GetWeight() + "Kg / 25Kg";
+            youAreDeadText.Text = "ÅYOU ARE DEAD";
+            godModeText.Text = "ÅGODMODE";
+
+            //Capturar Input teclado para activar o desactivar boundingBox
             if (Input.keyPressed(Key.Z))
             {
                 BoundingBox = !BoundingBox;
             }
-            if (Input.keyPressed(Key.I))
-            {
-                showInventory = !showInventory;
-            }
-            //Capturar Input teclado
+            //Capturar Input teclado para activar o desactivar HUD
             if (Input.keyPressed(Key.H))
             {
                 showHUD = !showHUD;
             }
-            
-            //Godmode
+            //Capturar Input teclado para activar o desactivar Godmode
             if (Input.keyPressed(Key.G))
             {
                 godMode = !godMode;
@@ -561,6 +686,24 @@ namespace TGC.Group.Model
         public override void Render()
         {
             PreRender();
+            ClearTextures();
+
+            fog.Enabled = fogEnabled;
+            fog.StartDistance = 100;
+            fog.EndDistance = 10000;
+            fog.Density = 0.0025f;
+            fog.Color = Color.LightGray;
+
+            if (fog.Enabled)
+            {
+                // Cargamos las variables de shader, color del fog.
+                fog.updateValues();
+                effect.SetValue("ColorFog", fog.Color.ToArgb());
+                effect.SetValue("CameraPos", TgcParserUtils.vector3ToFloat4Array(Camara.Position));
+                effect.SetValue("StartFogDistance", fog.StartDistance);
+                effect.SetValue("EndFogDistance", fog.EndDistance);
+                effect.SetValue("Density", fog.Density);
+            }
 
             terrain.render();
             skybox.render();
@@ -572,16 +715,35 @@ namespace TGC.Group.Model
                 pickingRay.updateRay();
 
                 //Testear Ray contra el AABB de todos los meshes
-                foreach (var mesh in models)
+                if (showInventory)
                 {
-                    var aabb = mesh.BoundingBox;
-
-                    //Ejecutar test, si devuelve true se carga el punto de colision collisionPoint
-                    selected = TgcCollisionUtils.intersectRayAABB(pickingRay.Ray, aabb, out collisionPoint);
-                    if (selected)
+                    foreach (var item in inventoryHUD)
                     {
-                        selectedMesh = mesh;
-                        break;
+                        var aabb = item.BoundingBox;
+
+                        //Ejecutar test, si devuelve true se carga el punto de colision collisionPoint
+                        selected = TgcCollisionUtils.intersectRayAABB(pickingRay.Ray, aabb, out collisionPoint);
+                        if (selected)
+                        {
+                            selectedMesh = item;
+                            selectedItem = actor.GetInventory().GetItemByID(Int32.Parse(selectedMesh.Name));
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var mesh in models)
+                    {
+                        var aabb = mesh.BoundingBox;
+
+                        //Ejecutar test, si devuelve true se carga el punto de colision collisionPoint
+                        selected = TgcCollisionUtils.intersectRayAABB(pickingRay.Ray, aabb, out collisionPoint);
+                        if (selected)
+                        {
+                            selectedMesh = mesh;
+                            break;
+                        }
                     }
                 }
             }
@@ -593,7 +755,19 @@ namespace TGC.Group.Model
                             * Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
                             * Matrix.Translation(mesh.Position);
                 mesh.AlphaBlendEnable = true;
+                if (fog.Enabled)
+                {
+                    mesh.Effect = effect;
+                    mesh.Technique = "RenderScene";
+                }
+                else
+                {
+                    mesh.Effect = TgcShaders.Instance.TgcMeshShader;
+                    mesh.Technique = "DIFFUSE_MAP";
+                }
+
                 mesh.render();
+
                 if (BoundingBox)
                 {
                     mesh.BoundingBox.render();
@@ -625,36 +799,31 @@ namespace TGC.Group.Model
                         {
                             while (iterator < itemsObtained)
                             {
-                                pickItemType = numberGenerator.Next(1, 7);
+                                pickItemType = numberGenerator.Next(1, 6);
                                 switch (pickItemType)
                                 {
                                     case 1:
-                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Water_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 2:
-                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
-                                        actor.GetInventory().AddItem(item);
-                                        break;
-                                    case 3:
-                                        item = new Item(itemId, "Charcoal", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Charcoal", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Charcoal_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
-                                    case 4:
-                                        item = new Item(itemId, "Wood", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                    case 3:
+                                        item = new Item(itemId, "00_Wood", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Wood_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
-                                    case 5:
-                                        item = new Item(itemId, "Fiber", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                    case 4:
+                                        item = new Item(itemId, "00_Fiber", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Cloth_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
-                                    case 6:
-                                        item = new Item(itemId, "Apple", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                    case 5:
+                                        item = new Item(itemId, "00_Apple", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Apple_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
@@ -671,12 +840,12 @@ namespace TGC.Group.Model
                                 switch (pickItemType)
                                 {
                                     case 1:
-                                        item = new Item(itemId, "Stone", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Stone", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Stone_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 2:
-                                        item = new Item(itemId, "Metal", 3, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Metal", 3, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Metal_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
@@ -689,21 +858,16 @@ namespace TGC.Group.Model
                         {
                             while (iterator < itemsObtained)
                             {
-                                pickItemType = numberGenerator.Next(1, 4);
+                                pickItemType = numberGenerator.Next(1, 3);
                                 switch (pickItemType)
                                 {
                                     case 1:
-                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Water_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 2:
-                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
-                                        actor.GetInventory().AddItem(item);
-                                        break;
-                                    case 3:
-                                        item = new Item(itemId, "Fiber", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Fiber", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Cloth_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
@@ -720,23 +884,23 @@ namespace TGC.Group.Model
                                 switch (pickItemType)
                                 {
                                     case 1:
-                                        item = new Item(itemId, "Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                        item = new Item(itemId, "00_Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
                                                         MediaDir + "\\Textures\\Water_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 2:
-                                        item = new Item(itemId, "Salt Water", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                                                        MediaDir + "\\Textures\\Salt_Water_icon.png"));
+                                        item = new Item(itemId, "00_Fiber", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 3:
-                                        item = new Item(itemId, "Fiber", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        item = new Item(itemId, "00_Corn", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Corn_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                     case 4:
-                                        item = new Item(itemId, "Banana", 2, TgcTexture.createTexture(D3DDevice.Instance.Device,
-                                                        MediaDir + "\\Textures\\Cloth_icon.png"));
+                                        item = new Item(itemId, "00_Leather", 1, TgcTexture.createTexture(D3DDevice.Instance.Device,
+                                                        MediaDir + "\\Textures\\Leather_icon.png"));
                                         actor.GetInventory().AddItem(item);
                                         break;
                                 }
@@ -746,33 +910,81 @@ namespace TGC.Group.Model
                         }
                     }
 
-                    models.Remove(selectedMesh);
-                    objetosColisionables.Remove(selectedMesh.BoundingBox);
+                    if (showInventory)
+                    {
+                        if (selectedItem.GetName().Contains("00_Water"))
+                        {
+                            actor.SetThirstStatus(false);
+                            actor.SetStamina(actor.GetStamina() + 15);
+                        }
+                        else if (selectedItem.GetName().Contains("00_Fiber") || selectedItem.GetName().Contains("00_Leather"))
+                        {
+                            actor.SetColdStatus(false);
+                        }
+                        else if (selectedItem.GetName().Contains("00_Apple") || selectedItem.GetName().Contains("00_Corn"))
+                        {
+                            actor.SetHungerStatus(false);
+                            actor.SetHealth(actor.GetHealth() + 15);
+                        }
+
+                        inventoryHUD.Remove(selectedMesh);
+                        actor.GetInventory().RemoveItem(selectedItem);
+                    }
+                    else
+                    {
+                        models.Remove(selectedMesh);
+                        objetosColisionables.Remove(selectedMesh.BoundingBox);
+                    }
                 }
 
                 selectedMesh = null;
+                selectedItem = null;
                 selected = false;
             }
 
-            /*(if (showInventory)
-            {
-                inventory.render();
-            }*/
-
             //Render personaje
             character.animateAndRender(ElapsedTime);
-         
-           var positionY = 0;
-            foreach (var item in actor.GetInventory().GetItems())
+            
+            //Aviso de Personaje Muerto
+            if (actor.GetHealth() <= 0)
             {
-                DrawText.drawText("Item Name: " + item.GetName() + " ID: " + item.GetId(), 5, positionY, System.Drawing.Color.Red);
-                positionY = positionY + 20;
+                youAreDeadText.render();
             }
 
+            //Aviso de GodMode
+            if (godMode)
+            {
+                godModeText.render();
+            }
+
+            //Muestro Pantalla de ayuda si toca tecla P
+            if (Input.keyPressed(Key.P))
+            {
+                helpForm.ShowDialog();
+            }
+
+            //Render del HUD e Inventario
             if (showHUD)
             {
+                if (showInventory && (actor.GetHealth() > 0))
+                {
+                    inventoryBoard.render();
+                    foreach (var item in inventoryHUD)
+                    {
+                        item.Transform =
+                        Matrix.Scaling(item.Scale)
+                                    * Matrix.RotationYawPitchRoll(item.Rotation.Y, item.Rotation.X, item.Rotation.Z)
+                                    * Matrix.Translation(item.Position);
+                        item.AlphaBlendEnable = true;
+                        item.render();
+                    }
+                }
                 healthBar.render();
                 staminaBar.render();
+                inventoryText.render();
+                weightText.render();
+                healthText.render();
+                staminaText.render();
                 if (actor.GetColdStatus())
                     coldIcon.render();
                 if (actor.GetThirstStatus())
@@ -798,16 +1010,28 @@ namespace TGC.Group.Model
             terrain.dispose();
             healthBar.dispose();
             staminaBar.dispose();
+            inventoryText.Dispose();
+            weightText.Dispose();
+            healthText.Dispose();
+            godModeText.Dispose();
+            staminaText.Dispose();
+            youAreDeadText.Dispose();
             coldIcon.dispose();
             thirstIcon.dispose();
             hungerIcon.dispose();
             fatigueIcon.dispose();
             overweightIcon.dispose();
+            inventoryBoard.dispose();
             skybox.dispose();
             character.dispose();
+            helpForm.Dispose();
             foreach (var mesh in models)
             {
                 mesh.dispose();
+            }
+            foreach (var item in inventoryHUD)
+            {
+                item.dispose();
             }
         }
     }
