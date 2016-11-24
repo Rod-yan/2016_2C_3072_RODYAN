@@ -133,7 +133,7 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("4")]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
         public int Config_MapSizeMultiplier {
             get {
                 return ((int)(this["Config_MapSizeMultiplier"]));
@@ -157,13 +157,37 @@ namespace TGC.Group {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
         public int Config_WalkingSpeed {
             get {
                 return ((int)(this["Config_WalkingSpeed"]));
             }
             set {
                 this["Config_WalkingSpeed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1366")]
+        public int Config_ScreenWidth {
+            get {
+                return ((int)(this["Config_ScreenWidth"]));
+            }
+            set {
+                this["Config_ScreenWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("768")]
+        public int Config_ScreenHeigh {
+            get {
+                return ((int)(this["Config_ScreenHeigh"]));
+            }
+            set {
+                this["Config_ScreenHeigh"] = value;
             }
         }
     }

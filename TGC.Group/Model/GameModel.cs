@@ -53,7 +53,7 @@ namespace TGC.Group.Model
         private TgcPlane inventoryBoard;
         private List<TgcMesh> models;
         private List<TgcMesh> inventoryHUD = new List<TgcMesh>();
-        private List<Item> combinedItems = new List<Item>(2);
+        private List<TgcMesh> combinedItems = new List<TgcMesh>(2);
         private TgcSkyBox skybox;
         private TgcSkeletalMesh character;
         private SphereCollisionManager collisionManager;
@@ -67,6 +67,7 @@ namespace TGC.Group.Model
         private TgcText2D healthText;
         private TgcText2D staminaText;
         private TgcText2D youAreDeadText;
+        private TgcText2D youSurvivedText;
         private TgcText2D godModeText;
         private Vector3 collisionPoint;
         private Actor actor = new Actor();
@@ -77,6 +78,8 @@ namespace TGC.Group.Model
         private bool godMode = false;
         private bool showInventory = false;
         private bool fogEnabled = false;
+        private int screenWidth = Game.Default.Config_ScreenWidth;
+        private int screenHeigh = Game.Default.Config_ScreenHeigh;
 
         /// <summary>
         ///     Constructor del juego.
@@ -143,8 +146,7 @@ namespace TGC.Group.Model
 
                     fogEnabled = false;
 
-                    if (numberGenerator.Next(1, 3) == 1)
-                        actor.SetColdStatus(true);
+                    actor.SetColdStatus(true);
 
                     if (numberGenerator.Next(1, 20) == 10)
                         actor.SetThirstStatus(true);
@@ -299,7 +301,7 @@ namespace TGC.Group.Model
                                          );
             //Texto de inventario
             inventoryText = new TgcText2D();
-            inventoryText.Position = new Point(1600, 900);
+            inventoryText.Position = new Point((int)(screenWidth * 0.84), (int)(screenHeigh * 0.84));
             inventoryText.Size = new Size(500, 100);
             inventoryText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
             inventoryText.Color = Color.Yellow;
@@ -307,7 +309,7 @@ namespace TGC.Group.Model
 
             //Texto de Peso
             weightText = new TgcText2D();
-            weightText.Position = new Point(1600, 930);
+            weightText.Position = new Point((int)(screenWidth * 0.84), (int)(screenHeigh * 0.86));
             weightText.Size = new Size(500, 100);
             weightText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
             weightText.Color = Color.Yellow;
@@ -315,7 +317,7 @@ namespace TGC.Group.Model
 
             //Texto de Salud
             healthText = new TgcText2D();
-            healthText.Position = new Point(150, 900);
+            healthText.Position = new Point((int)(screenWidth * 0.078), (int)(screenHeigh * 0.84));
             healthText.Size = new Size(500, 100);
             healthText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
             healthText.Color = Color.Red;
@@ -323,7 +325,7 @@ namespace TGC.Group.Model
 
             //Texto de Aguante
             staminaText = new TgcText2D();
-            staminaText.Position = new Point(150, 930);
+            staminaText.Position = new Point((int)(screenWidth * 0.078), (int)(screenHeigh * 0.86));
             staminaText.Size = new Size(500, 100);
             staminaText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
             staminaText.Color = Color.LightGreen;
@@ -331,15 +333,23 @@ namespace TGC.Group.Model
 
             //Texto de Personaje Muerto
             youAreDeadText = new TgcText2D();
-            youAreDeadText.Position = new Point(500, 500);
+            youAreDeadText.Position = new Point((int)(screenWidth * 0.2604), (int)(screenHeigh * 0.463));
             youAreDeadText.Size = new Size(500, 100);
             youAreDeadText.changeFont(new System.Drawing.Font("TimesNewRoman", 52, FontStyle.Regular));
             youAreDeadText.Color = Color.Tomato;
             youAreDeadText.Align = TgcText2D.TextAlign.LEFT;
 
+            //Texto de Juego Ganado
+            youSurvivedText = new TgcText2D();
+            youSurvivedText.Position = new Point((int)(screenWidth * 0.2604), (int)(screenHeigh * 0.463));
+            youSurvivedText.Size = new Size(500, 100);
+            youSurvivedText.changeFont(new System.Drawing.Font("TimesNewRoman", 52, FontStyle.Regular));
+            youSurvivedText.Color = Color.LightSeaGreen;
+            youSurvivedText.Align = TgcText2D.TextAlign.LEFT;
+
             //Texto de GodMode
             godModeText = new TgcText2D();
-            godModeText.Position = new Point(900, 20);
+            godModeText.Position = new Point((int)(screenWidth * 0.46875), (int)(screenHeigh * 0.0185));
             godModeText.Size = new Size(500, 100);
             godModeText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
             godModeText.Color = Color.Blue;
@@ -554,7 +564,7 @@ namespace TGC.Group.Model
             camaraInterna.UpdateCamera(ElapsedTime);
 
             //Probabilidad de que cambie el estado climatico de 1:3000
-            if ((numberGenerator.Next(1, 5000) == 2500) && (actor.GetHealth() > 0))
+            if ((numberGenerator.Next(1, 4000) == 2500) && (actor.GetHealth() > 0))
             {
                 weatherIndex = numberGenerator.Next(1, 4);
                 changeWeather(weatherIndex);
@@ -634,7 +644,7 @@ namespace TGC.Group.Model
                     iconOffsetX = iconOffsetX + 40;
                     columnCount = columnCount + 1;
 
-                    inventoryHUD.Add(itemIcon.toMesh(item.GetId()+""));
+                    inventoryHUD.Add(itemIcon.toMesh(item.GetId() + ""));
                 }
             }
 
@@ -643,6 +653,7 @@ namespace TGC.Group.Model
             staminaText.Text = "ÅSTAMINA: " + (int)actor.GetStamina();
             inventoryText.Text = "ÅINVENTORY: "+actor.GetInventory().GetItems().Count+" / 20";
             weightText.Text = "ÅWEIGHT: " + actor.GetInventory().GetWeight() + "Kg / 25Kg";
+            youSurvivedText.Text = "ÅYOU SURVIVED!";
             youAreDeadText.Text = "ÅYOU ARE DEAD";
             godModeText.Text = "ÅGODMODE";
 
@@ -733,9 +744,10 @@ namespace TGC.Group.Model
                                 if (combinedItems.Count == 2)
                                     combinedItems.Clear();
 
-                                selectedMesh.BoundingBox.render();
-
-                                combinedItems.Add(selectedItem);
+                                combinedItems.Add(selectedMesh);
+                                selectedMesh = null;
+                                selectedItem = null;
+                                selected = false;
                             }
                             break;
                         }
@@ -955,7 +967,14 @@ namespace TGC.Group.Model
 
             //Render personaje
             character.animateAndRender(ElapsedTime);
-            
+
+            //Aviso de Juego Ganado
+            if (models.Count == 0)
+            {
+                youSurvivedText.render();
+                actor.SetHealth(100);
+            }
+
             //Aviso de Personaje Muerto
             if (actor.GetHealth() <= 0)
             {
@@ -987,6 +1006,11 @@ namespace TGC.Group.Model
                                     * Matrix.RotationYawPitchRoll(item.Rotation.Y, item.Rotation.X, item.Rotation.Z)
                                     * Matrix.Translation(item.Position);
                         item.AlphaBlendEnable = true;
+                        if (combinedItems.Contains(item))
+                        {
+                            item.setColor(Color.DarkBlue);
+                            item.UpdateMeshTransform();
+                        }
                         item.render();
                     }
                 }
@@ -1027,6 +1051,7 @@ namespace TGC.Group.Model
             godModeText.Dispose();
             staminaText.Dispose();
             youAreDeadText.Dispose();
+            youSurvivedText.Dispose();
             coldIcon.dispose();
             thirstIcon.dispose();
             hungerIcon.dispose();

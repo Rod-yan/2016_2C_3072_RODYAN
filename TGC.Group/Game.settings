@@ -30,13 +30,19 @@
       <Value Profile="(Default)">175</Value>
     </Setting>
     <Setting Name="Config_MapSizeMultiplier" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">4</Value>
+      <Value Profile="(Default)">5</Value>
     </Setting>
     <Setting Name="Config_MaxWeight" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">25</Value>
     </Setting>
     <Setting Name="Config_WalkingSpeed" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1</Value>
+      <Value Profile="(Default)">6</Value>
+    </Setting>
+    <Setting Name="Config_ScreenWidth" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1366</Value>
+    </Setting>
+    <Setting Name="Config_ScreenHeigh" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">768</Value>
     </Setting>
   </Settings>
 </SettingsFile>
