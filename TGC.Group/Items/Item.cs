@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TGC.Core.Textures;
+﻿using TGC.Core.Textures;
 using TGC.Core.SceneLoader;
-using TGC.Core.Geometry;
 
 namespace TGC.Group.Items
 {

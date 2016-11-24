@@ -53,6 +53,7 @@ namespace TGC.Group.Model
         private TgcPlane inventoryBoard;
         private List<TgcMesh> models;
         private List<TgcMesh> inventoryHUD = new List<TgcMesh>();
+        private List<Item> combinedItems = new List<Item>(2);
         private TgcSkyBox skybox;
         private TgcSkeletalMesh character;
         private SphereCollisionManager collisionManager;
@@ -216,7 +217,7 @@ namespace TGC.Group.Model
             if (terrainSizeMultiplier <= 0)
                 terrainSizeMultiplier = 1;
             terrain = new TgcPlane(new Vector3(), new Vector3(6000 * terrainSizeMultiplier, 0f, 6000 * terrainSizeMultiplier), TgcPlane.Orientations.XZplane, terrainTexture, 50f, 50f);
-          
+
             //Cargar personaje con animaciones
             character =
                        skeletalLoader.loadMeshAndAnimationsFromFile(
@@ -317,7 +318,7 @@ namespace TGC.Group.Model
             healthText.Position = new Point(150, 900);
             healthText.Size = new Size(500, 100);
             healthText.changeFont(new System.Drawing.Font("TimesNewRoman", 14, FontStyle.Regular));
-            healthText.Color = Color.LightSalmon;
+            healthText.Color = Color.Red;
             healthText.Align = TgcText2D.TextAlign.LEFT;
 
             //Texto de Aguante
@@ -336,7 +337,7 @@ namespace TGC.Group.Model
             youAreDeadText.Color = Color.Tomato;
             youAreDeadText.Align = TgcText2D.TextAlign.LEFT;
 
-            //Texto de Personaje Muerto
+            //Texto de GodMode
             godModeText = new TgcText2D();
             godModeText.Position = new Point(900, 20);
             godModeText.Size = new Size(500, 100);
@@ -562,15 +563,15 @@ namespace TGC.Group.Model
             //Efectos adversos
             if (actor.GetColdStatus())
             {
-                coldEffect = 0.004f;
+                coldEffect = 0.008f;
             }
             if (actor.GetHungerStatus())
             {
-                hungerEffect = 0.002f;
+                hungerEffect = 0.004f;
             }
             if (actor.GetThirstStatus())
             {
-                thirstEffect = 0.002f;
+                thirstEffect = 0.004f;
             }
 
             //Modificadores a la salud del actor
@@ -616,7 +617,7 @@ namespace TGC.Group.Model
             inventoryBoard.Origin = new Vector3(character.Position.X - 120, character.Position.Y + 50, character.Position.Z - 99f);
             inventoryBoard.updateValues();
 
-            //Doy formato visual al inventario
+            //Doy formato al inventario
             if (showInventory && (actor.GetHealth() > 0))
             {
                 inventoryHUD.Clear();
@@ -709,7 +710,7 @@ namespace TGC.Group.Model
             skybox.render();
 
             //Si hacen clic con el mouse, ver si hay colision RayAABB
-            if (Input.buttonPressed(TgcD3dInput.MouseButtons.BUTTON_LEFT))
+            if (Input.buttonPressed(TgcD3dInput.MouseButtons.BUTTON_LEFT) || Input.buttonPressed(TgcD3dInput.MouseButtons.BUTTON_RIGHT))
             {
                 //Actualizar Ray de colision en base a posicion del mouse
                 pickingRay.updateRay();
@@ -727,6 +728,15 @@ namespace TGC.Group.Model
                         {
                             selectedMesh = item;
                             selectedItem = actor.GetInventory().GetItemByID(Int32.Parse(selectedMesh.Name));
+                            if (Input.buttonPressed(TgcD3dInput.MouseButtons.BUTTON_RIGHT))
+                            {
+                                if (combinedItems.Count == 2)
+                                    combinedItems.Clear();
+
+                                selectedMesh.BoundingBox.render();
+
+                                combinedItems.Add(selectedItem);
+                            }
                             break;
                         }
                     }
@@ -755,6 +765,7 @@ namespace TGC.Group.Model
                             * Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
                             * Matrix.Translation(mesh.Position);
                 mesh.AlphaBlendEnable = true;
+
                 if (fog.Enabled)
                 {
                     mesh.Effect = effect;

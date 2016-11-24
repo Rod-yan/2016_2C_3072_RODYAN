@@ -30,7 +30,7 @@
       <Value Profile="(Default)">175</Value>
     </Setting>
     <Setting Name="Config_MapSizeMultiplier" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2</Value>
+      <Value Profile="(Default)">4</Value>
     </Setting>
     <Setting Name="Config_MaxWeight" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">25</Value>
